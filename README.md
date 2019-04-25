@@ -8,6 +8,9 @@ TODO write a proper readme
 
 ## Usage
 
+You'll need a development version of Liquid Haskell. If you use cabal new-build,
+you can find an appropriate source-repository in the `cabal.project` file.
+
 Add the `-fplugin GHC.Plugin.SingletonOptimizer` ghc option and mark the
 singletons to optimize with the annotation `OptimizeSingleton`.
 
