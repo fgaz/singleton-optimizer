@@ -72,7 +72,7 @@ proof1 = Refl
 proof :: Teq (NatPlus 'Z n) n
 proof = undefined
 -- proof = proof -- does not work
--- proof = let x = x in x -- this works >.< LH/#1404
+-- proof = let x = x in x -- this works >.< LH/#1404 (should be fixed in dev)
 -- proof = undefined -- works too, but this time it's understandable
 
 baz :: forall n . Vec n -> ()

@@ -9,7 +9,7 @@ packages:
 source-repository-package
   type: git
   location: https://github.com/ucsd-progsys/liquidhaskell.git
-  tag: e725abded15fc8f7cbedd66781ad56345318f6b4
+  tag: 574d17ba012dffcff5a736e15cd0a603bf0f558d
 
 source-repository-package
   type: git
