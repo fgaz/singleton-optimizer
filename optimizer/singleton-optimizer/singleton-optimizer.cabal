@@ -1,0 +1,35 @@
+cabal-version:       2.0
+
+name:                singleton-optimizer
+version:             0.1.0.0
+-- synopsis:
+-- description:
+-- bug-reports:
+license:             BSD3
+license-file:        LICENSE
+author:              Francesco Gazzetta
+maintainer:          fgaz@fgaz.me
+copyright:           Copyright (c) 2019, Francesco Gazzetta
+category:            Development
+build-type:          Simple
+extra-source-files:  CHANGELOG.md
+
+library
+  exposed-modules:     GHC.Plugin.SingletonOptimizer
+  -- other-modules:
+  -- other-extensions:
+  build-depends:       base ^>=4.12.0.0
+                     , ghc
+                     , liquidhaskell
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+test-suite simple-test
+  ghc-options:         -fplugin GHC.Plugin.SingletonOptimizer
+  type:                exitcode-stdio-1.0
+  build-depends:       base, singleton-optimizer
+  main-is:             simple-test.hs
+  hs-source-dirs:      tests
+  default-language:    Haskell2010
+

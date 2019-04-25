@@ -1,0 +1,13 @@
+cabal-version:       2.0
+
+name:                CoreAnnotationPluginMain
+version:             0.1.0.0
+build-type:          Simple
+
+executable CoreAnnotationPluginMain
+  main-is:             CoreAnnotationPluginMain.hs
+  build-depends:       base >=4.12 && <4.13
+                     , CoreAnnotationPlugin
+  ghc-options:         -fplugin CoreAnnotationPlugin
+  default-language:    Haskell2010
+

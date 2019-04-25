@@ -1,0 +1,14 @@
+cabal-version:       2.0
+
+name:                SourcePluginMain
+version:             0.1.0.0
+build-type:          Simple
+
+library
+  exposed-modules:     SourcePluginMain
+  other-extensions:    TemplateHaskell
+  build-depends:       base >=4.12 && <4.13
+                     , SourcePlugin
+  ghc-options:         -fplugin SourcePlugin
+  default-language:    Haskell2010
+

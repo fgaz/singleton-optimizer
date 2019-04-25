@@ -1,0 +1,18 @@
+packages:
+  singleton-optimizer
+  -- experiments
+  plugin-experiments/CoreAnnotationPlugin
+  plugin-experiments/CoreAnnotationPluginMain
+  --plugin-experiments/SourcePlugin
+  --plugin-experiments/SourcePluginMain
+
+source-repository-package
+  type: git
+  location: https://github.com/ucsd-progsys/liquidhaskell.git
+  tag: e725abded15fc8f7cbedd66781ad56345318f6b4
+
+source-repository-package
+  type: git
+  location: https://github.com/ucsd-progsys/liquid-fixpoint.git
+  tag: c47a4df6c02193882b8881ed968a13fa6d69b993
+
