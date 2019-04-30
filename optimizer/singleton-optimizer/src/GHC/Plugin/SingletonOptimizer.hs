@@ -5,15 +5,19 @@ module GHC.Plugin.SingletonOptimizer
 , OptimizeSingleton(..)
 ) where
 
--- TODO explicit/qualified imports to avoid future breakage
-import GhcPlugins hiding ((<>), isSingleton)
-import Control.Monad ((<=<))
-import Data.Data (Data)
+import GhcPlugins hiding ((<>), isSingleton) -- MAYBE make explicit
+import Control.Monad
+  ( (<=<) )
+import Data.Data
+  ( Data )
 
 import qualified Language.Haskell.Liquid.UX.Config as LH.Config
-import Language.Haskell.Liquid.UX.CmdLine (mkOpts, defConfig)
-import Language.Haskell.Liquid.GHC.Interface (getGhcInfos)
-import Language.Haskell.Liquid.Termination.Structural (terminationVars)
+import Language.Haskell.Liquid.UX.CmdLine
+  ( mkOpts, defConfig )
+import Language.Haskell.Liquid.GHC.Interface
+  ( getGhcInfos )
+import Language.Haskell.Liquid.Termination.Structural
+  ( terminationVars )
 
 
 -- | All singletons marked with this annotation will be optimized
