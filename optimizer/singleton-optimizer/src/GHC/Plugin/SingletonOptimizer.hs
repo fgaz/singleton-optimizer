@@ -21,9 +21,6 @@ import Language.Haskell.Liquid.GHC.Interface (getGhcInfos)
 import Language.Haskell.Liquid.Termination.Structural (terminationVars)
 
 
-info :: SDoc -> CoreM () -- TODO handle verbosity
-info = putMsg
-
 -- | All singletons marked with this annotation will be optimized
 data OptimizeSingleton = OptimizeSingleton deriving (Data, Show)
 
@@ -52,23 +49,6 @@ pass g = do
 fromSrcSpan :: SrcSpan -> FilePath
 fromSrcSpan (UnhelpfulSpan fs) = unpackFS fs
 fromSrcSpan (RealSrcSpan rss) = unpackFS $ srcSpanFile rss
-
--- Substitute this to optimiseAnnotatedSingleton for debugging
-printInfo :: DynFlags
-          -> ModGuts
-          -> [Var]
-          -> (CoreBndr, CoreExpr)
-          -> CoreM (CoreBndr, CoreExpr)
-printInfo _dflags guts _nonTerm (b, expr) = do
-  anns <- annotationsOn guts b :: CoreM [OptimizeSingleton]
-  info $ "Annotations on" <+> ppr b P.<> ":" <+> text (show anns)
-  info $ "The expr of" <+> ppr b <+> "is:" <+> ppr expr
-  info $ "The type of" <+> ppr b <+> "is:" <+> ppr (varType b)
-  info $ "The splitted type of" <+> ppr b <+> "is:" <+> ppr (splitTyConApp_maybe $ varType b)
-  let singl = isSingleton $ varType b
-  info $ "The binding" <+> ppr b <+> "is a singleton:" <+> ppr singl
-  unless (null anns) $ info $ "Annotated binding found:" <+> ppr b
-  pure (b, expr)
 
 -- | Substituted all singletons with a certain annotation with a no-op
 optimiseAnnotatedSingleton :: DynFlags
