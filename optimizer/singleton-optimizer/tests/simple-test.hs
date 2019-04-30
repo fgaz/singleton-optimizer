@@ -6,7 +6,6 @@ import Data.Type.Equality ((:~:)(Refl))
 import Debug.Trace (trace)
 import System.IO.Unsafe (unsafePerformIO)
 import Data.IORef (IORef, newIORef, atomicWriteIORef, readIORef)
-import Control.Monad (unless)
 import System.Exit (exitFailure)
 
 
@@ -30,6 +29,7 @@ unoptimizedEquality = seq (unsafePerformIO $ atomicWriteIORef uref NotTriggered)
 optimizedEquality :: () :~: ()
 optimizedEquality = seq (unsafePerformIO $ atomicWriteIORef oref NotTriggered) $ trace "Equality marked as optimized left unchanged" Refl
 
+main :: IO ()
 main = do
   putStrLn "Refs before:"
   or1 <- readIORef oref
