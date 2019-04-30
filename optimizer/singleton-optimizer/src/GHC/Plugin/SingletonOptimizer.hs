@@ -5,8 +5,6 @@ module GHC.Plugin.SingletonOptimizer
 , OptimizeSingleton(..)
 ) where
 
--- TODO choose english vs american zpelling :-P
-
 -- TODO explicit/qualified imports to avoid future breakage
 import GhcPlugins hiding ((<>), isSingleton)
 import Control.Monad ((<=<))
@@ -38,7 +36,7 @@ pass g = do
   opts <- liftIO $ mkOpts defConfig { LH.Config.files = files }
   (infos, _env') <- liftIO $ getGhcInfos (Just env) opts files -- TODO is it ok to discard env'?
   let nonTerm = foldMap terminationVars infos
-  newBinds <- mapM (mapBind (optimiseAnnotatedSingleton g nonTerm)) (mg_binds g)
+  newBinds <- mapM (mapBind (optimizeAnnotatedSingleton g nonTerm)) (mg_binds g)
   pure g { mg_binds = newBinds }
 
 -- Should mostly work if the UnhelpfulSpan is always a relative path (MAYBE check it?)
@@ -47,11 +45,11 @@ fromSrcSpan (UnhelpfulSpan fs) = unpackFS fs
 fromSrcSpan (RealSrcSpan rss) = unpackFS $ srcSpanFile rss
 
 -- | Substituted all singletons with a certain annotation with a no-op
-optimiseAnnotatedSingleton :: ModGuts
+optimizeAnnotatedSingleton :: ModGuts
                            -> [Var] -- ^ non-terminating 'Var's
                            -> (CoreBndr, CoreExpr)
                            -> CoreM (CoreBndr, CoreExpr)
-optimiseAnnotatedSingleton guts nonTerm (b, expr) = do
+optimizeAnnotatedSingleton guts nonTerm (b, expr) = do
   anns <- annotationsOn guts b :: CoreM [OptimizeSingleton]
   let bt = varType b -- TODO normalize type synonyms
       singl = isSingleton bt
