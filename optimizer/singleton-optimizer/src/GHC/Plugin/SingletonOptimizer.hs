@@ -33,13 +33,12 @@ installCorePlugin _ todo =
 
 pass :: ModGuts -> CoreM ModGuts
 pass g = do
-  dflags <- getDynFlags -- TODO remove?
   env <- getHscEnv
   let files = [fromSrcSpan $ mg_loc g]
   opts <- liftIO $ mkOpts defConfig { LH.Config.files = files }
   (infos, _env') <- liftIO $ getGhcInfos (Just env) opts files -- TODO is it ok to discard env'?
   let nonTerm = foldMap terminationVars infos
-  newBinds <- mapM (mapBind (optimiseAnnotatedSingleton dflags g nonTerm)) (mg_binds g)
+  newBinds <- mapM (mapBind (optimiseAnnotatedSingleton g nonTerm)) (mg_binds g)
   pure g { mg_binds = newBinds }
 
 -- Should mostly work if the UnhelpfulSpan is always a relative path (MAYBE check it?)
@@ -48,12 +47,11 @@ fromSrcSpan (UnhelpfulSpan fs) = unpackFS fs
 fromSrcSpan (RealSrcSpan rss) = unpackFS $ srcSpanFile rss
 
 -- | Substituted all singletons with a certain annotation with a no-op
-optimiseAnnotatedSingleton :: DynFlags
-                           -> ModGuts
+optimiseAnnotatedSingleton :: ModGuts
                            -> [Var] -- ^ non-terminating 'Var's
                            -> (CoreBndr, CoreExpr)
                            -> CoreM (CoreBndr, CoreExpr)
-optimiseAnnotatedSingleton _dflags guts nonTerm (b, expr) = do
+optimiseAnnotatedSingleton guts nonTerm (b, expr) = do
   anns <- annotationsOn guts b :: CoreM [OptimizeSingleton]
   let bt = varType b -- TODO normalize type synonyms
       singl = isSingleton bt

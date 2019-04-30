@@ -7,12 +7,11 @@ info :: SDoc -> CoreM () -- TODO handle verbosity
 info = putMsg
 
 -- Substitute this to optimiseAnnotatedSingleton for debugging
-printInfo :: DynFlags
-          -> ModGuts
+printInfo :: ModGuts
           -> [Var]
           -> (CoreBndr, CoreExpr)
           -> CoreM (CoreBndr, CoreExpr)
-printInfo _dflags guts _nonTerm (b, expr) = do
+printInfo guts _nonTerm (b, expr) = do
   anns <- annotationsOn guts b :: CoreM [OptimizeSingleton]
   info $ "Annotations on" <+> ppr b P.<> ":" <+> text (show anns)
   info $ "The expr of" <+> ppr b <+> "is:" <+> ppr expr
