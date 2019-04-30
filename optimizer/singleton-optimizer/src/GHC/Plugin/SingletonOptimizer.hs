@@ -9,12 +9,9 @@ module GHC.Plugin.SingletonOptimizer
 
 -- TODO explicit/qualified imports to avoid future breakage
 import GhcPlugins hiding ((<>), isSingleton)
-import qualified GhcPlugins as P
-import qualified TcRnTypes as T
-import Control.Monad (unless, (<=<))
+import Control.Monad ((<=<))
 import Data.Data (Data)
 
-import Language.Haskell.Liquid.UX.Config (Config)
 import qualified Language.Haskell.Liquid.UX.Config as LH.Config
 import Language.Haskell.Liquid.UX.CmdLine (mkOpts, defConfig)
 import Language.Haskell.Liquid.GHC.Interface (getGhcInfos)
