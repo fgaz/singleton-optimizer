@@ -1,7 +1,33 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
+
+-- |
+-- Module      :  GHC.Plugin.SingletonOptimizer
+-- Copyright   :  (c) Francesco Gazzetta 2019
+-- License     :  BSD3 (see the file LICENSE)
+--
+-- Maintainer  :  fgaz.fgaz.me
+-- Stability   :  experimental
+-- Portability :  GHC
+--
+-- This plugin opimizes away any top-level binding that
+--
+-- * is a singleton (/not/ a function that returns a singleton)
+--   (not all cases are detected)
+-- * is proven total
+-- * is marked with the 'OptimizeSingleton' annotation
+--
+-- For example:
+--
+-- > -- TODO write a real example in which the optimization actually saves time
+-- > {-# ANN optimizedEquality OptimizeSingleton #-}
+-- > optimizedEquality :: SomeType :~: SomeEquivalentType
+-- > optimizedEquality = -- some expensive expression that eventually returns a 'Refl'
+
 module GHC.Plugin.SingletonOptimizer
-( plugin
+( -- * Plugin
+  plugin
+  -- * Annotations
 , OptimizeSingleton(..)
 ) where
 
@@ -20,11 +46,13 @@ import Language.Haskell.Liquid.Termination.Structural
   ( terminationVars )
 
 
--- | All singletons marked with this annotation will be optimized
+-- | All singletons (/not/ functions that return singletons) marked with this
+-- annotation will be checked for totality and, in case, optimized.
 data OptimizeSingleton = OptimizeSingleton deriving (Data, Show)
 
 -- | The singleton-optimizer plugin.
--- Right now it blindly optimizes all marked singletons.
+-- This gets automatically picked up by GHC when using
+-- @-fplugin GHC.Plugin.SingletonOptimizer@.
 plugin :: Plugin
 plugin = defaultPlugin
   { installCoreToDos = installCorePlugin }
@@ -50,7 +78,7 @@ fromSrcSpan (RealSrcSpan rss) = unpackFS $ srcSpanFile rss
 
 -- | Substituted all singletons with a certain annotation with a no-op
 optimizeAnnotatedSingleton :: ModGuts
-                           -> [Var] -- ^ non-terminating 'Var's
+                           -> [Var] -- ^ non-terminating 'Var.Var's
                            -> (CoreBndr, CoreExpr)
                            -> CoreM (CoreBndr, CoreExpr)
 optimizeAnnotatedSingleton guts nonTerm (b, expr) = do
@@ -62,7 +90,7 @@ optimizeAnnotatedSingleton guts nonTerm (b, expr) = do
               (_:_ , True , True) -> (b, coercedSingleton bt)
               _                   -> (b, expr)
 
--- | Check whether a 'Type' is a singleton (has a single inhabitant).
+-- | Check whether a 'Type.Type' is a singleton (has a single inhabitant).
 -- This does not catch all singleton cases, but it will definitely return
 -- 'False' when the type is NOT a singleton, so we're good.
 -- Cases where it returns 'False' on singletons:

@@ -2,14 +2,17 @@ cabal-version:       2.0
 
 name:                singleton-optimizer
 version:             0.1.0.0
--- synopsis:
--- description:
+synopsis:            Total Singleton Optimizer GHC plugin
+description:         This package contains a GHC plugin and annotation that
+                     optimizes away any marked singleton that it proves total.
+                     .
+                     See the module's haddocks for more info.
 -- bug-reports:
 license:             BSD3
 license-file:        LICENSE
 author:              Francesco Gazzetta
 maintainer:          fgaz@fgaz.me
-copyright:           Copyright (c) 2019, Francesco Gazzetta
+copyright:           (c) Francesco Gazzetta 2019
 category:            Development
 build-type:          Simple
 extra-source-files:  CHANGELOG.md
