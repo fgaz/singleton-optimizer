@@ -82,8 +82,8 @@ optimiseAnnotatedSingleton _dflags guts nonTerm (b, expr) = do
       singl = isSingleton bt
       term = b `notElem` nonTerm
   pure $ case (anns, singl, term) of
-    (_:_, True, True) -> (b, coercedSingleton bt)
-    _                 -> (b, expr)
+              (_:_ , True , True) -> (b, coercedSingleton bt)
+              _                   -> (b, expr)
 
 -- | Check whether a 'Type' is a singleton (has a single inhabitant).
 -- This does not catch all singleton cases, but it will definitely return
