@@ -73,8 +73,8 @@ optimiseAnnotatedSingleton _dflags guts (b, expr) = do
 -- * @data SomeType = SomeConstructor SomeSingleton@
 -- * probably others
 isSingleton :: Type -> Bool
-isSingleton t = maybe False (null . dataConOrigArgTys)
-                  (tyConAppTyCon_maybe t >>= tyConSingleDataCon_maybe)
+isSingleton = maybe False (null . dataConOrigArgTys) .
+                (tyConSingleDataCon_maybe <=< tyConAppTyCon_maybe)
 
 -- | Construct the only possible inhabitant of a singleton.
 -- MUST be called on singletons only
