@@ -11,8 +11,14 @@ module GHC.Plugin.SingletonOptimizer
 import GhcPlugins hiding ((<>), isSingleton)
 import qualified GhcPlugins as P
 import qualified TcRnTypes as T
-import Control.Monad (unless)
+import Control.Monad (unless, (<=<))
 import Data.Data (Data)
+
+import Language.Haskell.Liquid.UX.Config (Config)
+import qualified Language.Haskell.Liquid.UX.Config as LH.Config
+import Language.Haskell.Liquid.UX.CmdLine (mkOpts, defConfig)
+import Language.Haskell.Liquid.GHC.Interface (getGhcInfos)
+import Language.Haskell.Liquid.Termination.Structural (terminationVars)
 
 
 info :: SDoc -> CoreM () -- TODO handle verbosity
@@ -25,8 +31,7 @@ data OptimizeSingleton = OptimizeSingleton deriving (Data, Show)
 -- Right now it blindly optimizes all marked singletons.
 plugin :: Plugin
 plugin = defaultPlugin
-  { installCoreToDos = installCorePlugin
-  , typeCheckResultAction = callLH }
+  { installCoreToDos = installCorePlugin }
 
 installCorePlugin :: [CommandLineOption] -> [CoreToDo] -> CoreM [CoreToDo]
 installCorePlugin _ todo =
@@ -34,16 +39,27 @@ installCorePlugin _ todo =
 
 pass :: ModGuts -> CoreM ModGuts
 pass g = do
-  dflags <- getDynFlags
-  newBinds <- mapM (mapBind (optimiseAnnotatedSingleton dflags g)) (mg_binds g)
+  dflags <- getDynFlags -- TODO remove?
+  env <- getHscEnv
+  let files = [fromSrcSpan $ mg_loc g]
+  opts <- liftIO $ mkOpts defConfig { LH.Config.files = files }
+  (infos, _env') <- liftIO $ getGhcInfos (Just env) opts files -- TODO is it ok to discard env'?
+  let nonTerm = foldMap terminationVars infos
+  newBinds <- mapM (mapBind (optimiseAnnotatedSingleton dflags g nonTerm)) (mg_binds g)
   pure g { mg_binds = newBinds }
+
+-- Should mostly work if the UnhelpfulSpan is always a relative path (MAYBE check it?)
+fromSrcSpan :: SrcSpan -> FilePath
+fromSrcSpan (UnhelpfulSpan fs) = unpackFS fs
+fromSrcSpan (RealSrcSpan rss) = unpackFS $ srcSpanFile rss
 
 -- Substitute this to optimiseAnnotatedSingleton for debugging
 printInfo :: DynFlags
           -> ModGuts
+          -> [Var]
           -> (CoreBndr, CoreExpr)
           -> CoreM (CoreBndr, CoreExpr)
-printInfo _dflags guts (b, expr) = do
+printInfo _dflags guts _nonTerm (b, expr) = do
   anns <- annotationsOn guts b :: CoreM [OptimizeSingleton]
   info $ "Annotations on" <+> ppr b P.<> ":" <+> text (show anns)
   info $ "The expr of" <+> ppr b <+> "is:" <+> ppr expr
@@ -57,14 +73,17 @@ printInfo _dflags guts (b, expr) = do
 -- | Substituted all singletons with a certain annotation with a no-op
 optimiseAnnotatedSingleton :: DynFlags
                            -> ModGuts
+                           -> [Var] -- ^ non-terminating 'Var's
                            -> (CoreBndr, CoreExpr)
                            -> CoreM (CoreBndr, CoreExpr)
-optimiseAnnotatedSingleton _dflags guts (b, expr) = do
+optimiseAnnotatedSingleton _dflags guts nonTerm (b, expr) = do
   anns <- annotationsOn guts b :: CoreM [OptimizeSingleton]
-  let singl = isSingleton $ varType b -- TODO normalize type synonyms
-  pure $ case (anns, singl) of
-    (_:_, True) -> (b, coercedSingleton $ varType b)
-    _           -> (b, expr)
+  let bt = varType b -- TODO normalize type synonyms
+      singl = isSingleton bt
+      term = b `notElem` nonTerm
+  pure $ case (anns, singl, term) of
+    (_:_, True, True) -> (b, coercedSingleton bt)
+    _                 -> (b, expr)
 
 -- | Check whether a 'Type' is a singleton (has a single inhabitant).
 -- This does not catch all singleton cases, but it will definitely return
@@ -94,13 +113,4 @@ annotationsOn :: Data a => ModGuts -> CoreBndr -> CoreM [a]
 annotationsOn guts bndr = do
   anns <- getAnnotations deserializeWithData guts
   pure $ lookupWithDefaultUFM anns [] (varUnique bndr)
-
--- TODO this should add some 'ThisIsTotalOptimizeIt' annotation
---      or a global annotation with a list of 'Var's
--- TODO can we put this in the Core layer?
---      Do we have the filename info there (maybe through HscEnv)?
---      Or can we reduce the amount of needed info? The API exposed by LH is
---      pretty limited...
-callLH :: [CommandLineOption] -> ModSummary -> T.TcGblEnv -> T.TcM T.TcGblEnv
-callLH _ _ = pure
 
