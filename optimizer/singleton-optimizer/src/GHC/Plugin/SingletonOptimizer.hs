@@ -6,7 +6,7 @@
 -- Copyright   :  (c) Francesco Gazzetta 2019
 -- License     :  BSD3 (see the file LICENSE)
 --
--- Maintainer  :  fgaz.fgaz.me
+-- Maintainer  :  fgaz@fgaz.me
 -- Stability   :  experimental
 -- Portability :  GHC
 --
