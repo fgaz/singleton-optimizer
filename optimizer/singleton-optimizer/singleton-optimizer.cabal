@@ -28,21 +28,3 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall
 
-test-suite simple-test
-  ghc-options:         -fplugin GHC.Plugin.SingletonOptimizer
-  type:                exitcode-stdio-1.0
-  build-depends:       base, singleton-optimizer
-  main-is:             simple-test.hs
-  hs-source-dirs:      tests
-  default-language:    Haskell2010
-  ghc-options:         -Wall
-
-test-suite nonterminating
-  ghc-options:         -fplugin GHC.Plugin.SingletonOptimizer
-  type:                exitcode-stdio-1.0
-  build-depends:       base, singleton-optimizer
-  main-is:             nonterminating.hs
-  hs-source-dirs:      tests
-  default-language:    Haskell2010
-  ghc-options:         -Wall
-

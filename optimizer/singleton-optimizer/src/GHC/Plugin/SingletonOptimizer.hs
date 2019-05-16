@@ -32,10 +32,17 @@ module GHC.Plugin.SingletonOptimizer
 ) where
 
 import GhcPlugins hiding ((<>), isSingleton) -- MAYBE make explicit
+import Data.Functor
+  ( ($>) )
 import Control.Monad
   ( (<=<) )
 import Data.Data
   ( Data )
+import Data.Maybe
+  ( isJust )
+import PrelNames
+  ( dollarIdKey, seqIdKey, traceKey
+  , plusNaturalIdKey, plusIntegerIdKey, minusNaturalIdKey, minusIntegerIdKey )
 
 import qualified Language.Haskell.Liquid.UX.Config as LH.Config
 import Language.Haskell.Liquid.UX.CmdLine
@@ -85,10 +92,89 @@ optimizeAnnotatedSingleton guts nonTerm (b, expr) = do
   anns <- annotationsOn guts b :: CoreM [OptimizeSingleton]
   let bt = varType b -- TODO normalize type synonyms
       singl = isSingleton bt
-      term = b `notElem` nonTerm
-  pure $ case (anns, singl, term) of
-              (_:_ , True , True) -> (b, coercedSingleton bt)
-              _                   -> (b, expr)
+      locallyTotalBinds = filter ((`notElem` nonTerm) . fst) $ flattenBinds (mg_binds guts)
+      lTot = b `elem` fmap fst locallyTotalBinds
+      -- This allows for only one level of indirection, but it will have to do
+      -- for now.
+      -- TODO investigate what exactly I have to check if I want to allow n
+      -- indirections, since Rec binds are probably already checked by LH.
+      definitelyTotalBinds = filter (null . externalReferences [] . snd) locallyTotalBinds
+      ext = externalReferences (b : fmap fst definitelyTotalBinds) expr
+  case (anns, singl, lTot , ext) of
+       (_:_ , True , True , [] ) -> pure (b, coercedSingleton bt)
+       ([]  , _    , _    , _  ) -> pure (b, expr)
+       (_:_ , False, _    , _  ) -> explainFailure NotASingleton b $> (b, expr)
+       (_:_ , _    , False, _  ) -> explainFailure NotProvedTotal b $> (b, expr)
+       (_:_ , _    , _    , _:_) -> explainFailure (ContainsExternalReferences ext) b $> (b, expr)
+
+data Failure = NotASingleton
+             | NotProvedTotal
+             | ContainsExternalReferences [Var]
+
+explainFailure :: Failure -> CoreBndr -> CoreM ()
+explainFailure failure b = warnMsg $
+  "Cannot optimize" <+> ppr b
+  <+> "because:" <+> failureExplaination failure
+
+failureExplaination :: Failure -> SDoc
+failureExplaination NotASingleton =
+  "Not a singleton"
+failureExplaination NotProvedTotal =
+  "Not proved total by Liquid haskell"
+failureExplaination (ContainsExternalReferences vars) =
+  "Contains references to things other than the function itself,"
+  <+> "total functions internal to the module,"
+  <+> "data constructors,"
+  <+> "and a few whitelisted functions ($, +, -, seq, trace...)."
+  $+$ "External references: " <+> ppr vars
+
+-- | Known-total external identifiers
+whitelistedIds :: [Unique]
+whitelistedIds =
+  [ dollarIdKey
+  , seqIdKey
+  , traceKey
+  , plusNaturalIdKey
+  , plusIntegerIdKey
+  , minusNaturalIdKey
+  , minusIntegerIdKey ]
+
+externalReferences :: [CoreBndr] -- ^ Allowed identifiers
+                   -> CoreExpr -- ^ Expression to check
+                   -> [Var] -- ^ External (and not allowed) 'Var's
+externalReferences bs (Var var) = [var | external]
+  where
+    external = not inAllowedBinders
+            && not isDataConstructor
+            && not isWhitelisted
+    inAllowedBinders = var `elem` bs
+    -- for some reason `isDataConName $ varName var` doesn't work but this does:
+    isDataConstructor = isJust $ isDataConId_maybe var
+    isWhitelisted = varUnique var `elem` whitelistedIds
+externalReferences _  (Lit _) = []
+externalReferences bs (App e e') =
+  externalReferences bs e
+  <> externalReferences bs e'
+externalReferences bs (Lam b e) = externalReferences (b:bs) e
+externalReferences bs (Let (NonRec b e') e) =
+  externalReferences bs e' -- not necessary to do b:bs because it's nonrec
+  <> externalReferences (b:bs) e
+externalReferences bs (Let (Rec binders) e) =
+  binderRefs
+  <> externalReferences (binderBound <> bs) e
+  where
+    binderBound = fst <$> binders
+    binderRefs = foldMap (externalReferences (binderBound <> bs) . snd) binders
+externalReferences bs (Case e b _ alts) =
+  externalReferences bs e
+  <> foldMap altRefs alts
+  where
+    altRefs (_, altBinds, altExpr) = externalReferences (b : altBinds <> bs) altExpr
+externalReferences bs (Cast e _) = externalReferences bs e
+externalReferences bs (Tick _ e) = externalReferences bs e
+externalReferences _  (Type _) = []
+externalReferences _  (Coercion _) = []
+
 
 -- | Check whether a 'Type.Type' is a singleton (has a single inhabitant).
 -- This does not catch all singleton cases, but it will definitely return
