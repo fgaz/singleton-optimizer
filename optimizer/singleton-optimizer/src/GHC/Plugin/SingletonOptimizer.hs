@@ -75,7 +75,18 @@ pass g = do
   opts <- liftIO $ mkOpts defConfig { LH.Config.files = files }
   (infos, _env') <- liftIO $ getGhcInfos (Just env) opts files -- TODO is it ok to discard env'?
   let nonTerm = foldMap terminationVars infos
-  newBinds <- mapM (mapBind (optimizeAnnotatedSingleton g nonTerm)) (mg_binds g)
+      locallyTotalBinds = filter ((`notElem` nonTerm) . fst) $ flattenBinds (mg_binds g)
+      -- This allows for only one level of indirection, but it will have to do
+      -- for now.
+      -- TODO investigate what exactly I have to check if I want to allow n
+      -- indirections, since Rec binds are probably already checked by LH.
+      definitelyTotalBinders = fst <$> filter (\(b, e) -> null $ externalReferences [b] e) locallyTotalBinds
+      -- TEMP two temporary additional levels of indirection
+      definitelyTotalBinders' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders) e) locallyTotalBinds
+      definitelyTotalBinders'' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders') e) locallyTotalBinds
+  newBinds <- mapM
+                (mapBind $ optimizeAnnotatedSingleton g definitelyTotalBinders'')
+                (mg_binds g)
   pure g { mg_binds = newBinds }
 
 -- Should mostly work if the UnhelpfulSpan is always a relative path (MAYBE check it?)
@@ -85,22 +96,16 @@ fromSrcSpan (RealSrcSpan rss) = unpackFS $ srcSpanFile rss
 
 -- | Substituted all singletons with a certain annotation with a no-op
 optimizeAnnotatedSingleton :: ModGuts
-                           -> [Var] -- ^ non-terminating 'Var.Var's
+                           -> [CoreBndr] -- ^ definitely total binders
                            -> (CoreBndr, CoreExpr)
                            -> CoreM (CoreBndr, CoreExpr)
-optimizeAnnotatedSingleton guts nonTerm (b, expr) = do
+optimizeAnnotatedSingleton guts totalBinders (b, expr) = do
   anns <- annotationsOn guts b :: CoreM [OptimizeSingleton]
   let bt = varType b -- TODO normalize type synonyms
       singl = isSingleton bt
-      locallyTotalBinds = filter ((`notElem` nonTerm) . fst) $ flattenBinds (mg_binds guts)
-      lTot = b `elem` fmap fst locallyTotalBinds
-      -- This allows for only one level of indirection, but it will have to do
-      -- for now.
-      -- TODO investigate what exactly I have to check if I want to allow n
-      -- indirections, since Rec binds are probably already checked by LH.
-      definitelyTotalBinds = filter (null . externalReferences [] . snd) locallyTotalBinds
-      ext = externalReferences (b : fmap fst definitelyTotalBinds) expr
-  case (anns, singl, lTot , ext) of
+      tot = b `elem` totalBinders
+      ext = externalReferences (b:totalBinders) expr
+  case (anns, singl, tot  , ext) of
        (_:_ , True , True , [] ) -> pure (b, coercedSingleton bt)
        ([]  , _    , _    , _  ) -> pure (b, expr)
        (_:_ , False, _    , _  ) -> explainFailure NotASingleton b $> (b, expr)
