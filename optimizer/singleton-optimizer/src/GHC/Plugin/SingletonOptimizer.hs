@@ -29,13 +29,14 @@ module GHC.Plugin.SingletonOptimizer
   plugin
   -- * Annotations
 , OptimizeSingleton(..)
+, UnsafeTotal(..)
 ) where
 
 import GhcPlugins hiding ((<>), isSingleton) -- MAYBE make explicit
 import Data.Functor
   ( ($>) )
 import Control.Monad
-  ( (<=<) )
+  ( (<=<), filterM )
 import Data.Data
   ( Data )
 import Data.Maybe
@@ -57,6 +58,11 @@ import Language.Haskell.Liquid.Termination.Structural
 -- annotation will be checked for totality and, in case, optimized.
 data OptimizeSingleton = OptimizeSingleton deriving (Data, Show)
 
+-- | use this annotation to manually mark a binding as total. It will /not/ be
+-- automatically checked for totality and it will be unconditionally treated as
+-- total.
+data UnsafeTotal = UnsafeTotal deriving (Data, Show)
+
 -- | The singleton-optimizer plugin.
 -- This gets automatically picked up by GHC when using
 -- @-fplugin GHC.Plugin.SingletonOptimizer@.
@@ -74,13 +80,18 @@ pass g = do
   let files = [fromSrcSpan $ mg_loc g]
   opts <- liftIO $ mkOpts defConfig { LH.Config.files = files }
   (infos, _env') <- liftIO $ getGhcInfos (Just env) opts files -- TODO is it ok to discard env'?
+  let isMarkedUnsafeTotal b = do
+        anns <- annotationsOn g b :: CoreM [UnsafeTotal]
+        pure $ not $ null anns
+  unsafelyTotalBinds <- filterM (isMarkedUnsafeTotal . fst) $ flattenBinds $ mg_binds g
   let nonTerm = foldMap terminationVars infos
-      locallyTotalBinds = filter ((`notElem` nonTerm) . fst) $ flattenBinds (mg_binds g)
+      locallyTotalBinds = filter ((`notElem` nonTerm) . fst) (flattenBinds $ mg_binds g)
+                       <> unsafelyTotalBinds
       -- This allows for only one level of indirection, but it will have to do
       -- for now.
       -- TODO investigate what exactly I have to check if I want to allow n
       -- indirections, since Rec binds are probably already checked by LH.
-      definitelyTotalBinders = fst <$> filter (\(b, e) -> null $ externalReferences [b] e) locallyTotalBinds
+      definitelyTotalBinders = fst <$> filter (\(b, e) -> null $ externalReferences (b : fmap fst unsafelyTotalBinds) e) locallyTotalBinds
       -- TEMP two temporary additional levels of indirection
       definitelyTotalBinders' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders) e) locallyTotalBinds
       definitelyTotalBinders'' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders') e) locallyTotalBinds
