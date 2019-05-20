@@ -9,6 +9,7 @@ import Control.Exception (Exception, throw, catch, evaluate)
 import Data.Functor(($>))
 import Data.Maybe (fromMaybe)
 import Debug.Trace (trace)
+import Data.Functor.Identity (Identity(..))
 
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
 
@@ -103,7 +104,8 @@ correctlyOptimized =
   , e "Indirect unit 1" indirectUnit1
   , e "Indirect unit 2" indirectUnit2
   , e "UnsafeTotal usage" unsafeFalselyTotal
-  , ef "Whitelisted module-external references" whitelistedExternalRefs ]
+  , ef "Whitelisted module-external references" whitelistedExternalRefs
+  , ef "Module-external data constructor" dataCon ]
 
 {-# ANN trivialEq OptimizeSingleton #-}
 trivialEq :: () :~: ()
@@ -133,6 +135,10 @@ unsafeFalselyTotal = ex unsafeFalselyTotal
 {-# ANN whitelistedExternalRefs OptimizeSingleton #-}
 whitelistedExternalRefs :: ()
 whitelistedExternalRefs = ex $ trace `seq` (1+1::Integer) `seq` (1+1::Int) `seq` ()
+
+{-# ANN dataCon OptimizeSingleton #-}
+dataCon :: Identity ()
+dataCon = ex $ Identity ()
 
 ----------------------------------------------
 -- Correctly unoptimized
