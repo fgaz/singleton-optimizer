@@ -1,5 +1,7 @@
 # Tesi Triennale -- Optimizing Total Singletons
 
+[![builds.sr.ht status](https://builds.sr.ht/~fgaz/thesis.svg)](https://builds.sr.ht/~fgaz/thesis?)
+
 TODO write a proper readme
 
 * `thesis` → the tex source of the thesis
