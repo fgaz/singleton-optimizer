@@ -91,10 +91,10 @@ pass g = do
       -- for now.
       -- TODO investigate what exactly I have to check if I want to allow n
       -- indirections, since Rec binds are probably already checked by LH.
-      definitelyTotalBinders = fst <$> filter (\(b, e) -> null $ externalReferences (b : fmap fst unsafelyTotalBinds) e) locallyTotalBinds
+      definitelyTotalBinders = fst <$> filter (\(b, e) -> null $ externalReferences (b : fmap fst unsafelyTotalBinds) e) locallyTotalBinds <> unsafelyTotalBinds
       -- TEMP two temporary additional levels of indirection
-      definitelyTotalBinders' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders) e) locallyTotalBinds
-      definitelyTotalBinders'' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders') e) locallyTotalBinds
+      definitelyTotalBinders' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders) e) locallyTotalBinds <> unsafelyTotalBinds
+      definitelyTotalBinders'' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders') e) locallyTotalBinds <> unsafelyTotalBinds
   newBinds <- mapM
                 (mapBind $ optimizeAnnotatedSingleton g definitelyTotalBinders'')
                 (mg_binds g)
