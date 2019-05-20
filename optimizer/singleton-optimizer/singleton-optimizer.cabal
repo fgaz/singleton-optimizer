@@ -31,7 +31,9 @@ library
 test-suite trigger-tests
   ghc-options:         -fplugin GHC.Plugin.SingletonOptimizer
   type:                exitcode-stdio-1.0
-  build-depends:       base, singleton-optimizer
+  build-depends:       base
+                     , singleton-optimizer
+                     , ansi-wl-pprint ^>=0.6.9
   main-is:             trigger-tests.hs
   hs-source-dirs:      tests
   default-language:    Haskell2010

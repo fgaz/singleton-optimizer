@@ -9,6 +9,8 @@ import Control.Exception (Exception, throw, catch, evaluate)
 import Data.Functor(($>))
 import Data.Maybe (fromMaybe, isNothing)
 
+import qualified Text.PrettyPrint.ANSI.Leijen as PP
+
 
 data NotOptimizedException = NotOptimizedException deriving Show
 
@@ -53,6 +55,20 @@ expectIncorrectlyUnoptimized singl =
     (evaluate singl $> False)
     (const $ pure True :: NotOptimizedException -> IO Bool)
 
+reportResults :: String -> IO Bool -> IO Bool
+reportResults desc ioRes = do
+  res <- ioRes
+  let passfail =
+        PP.dullblack $
+          if res
+          then
+            PP.ondullgreen $ PP.text "PASS"
+          else
+            PP.ondullred $ PP.text "FAIL"
+      line = passfail <> PP.colon PP.<+> PP.text desc <> PP.line
+  PP.putDoc line
+  pure res
+
 
 ----------------------------------------------
 -- Actual tests
@@ -61,10 +77,14 @@ expectIncorrectlyUnoptimized singl =
 -- Correctly optimized
 
 correctlyOptimized :: [IO Bool]
-correctlyOptimized = let e = expectCorrectlyOptimized in
-  [ e trivialEq
-  , e indirectUnit2, e indirectUnit1, e unit
-  , e unsafeFalselyTotal ]
+correctlyOptimized =
+  let cdesc = "Correctly optimized - "
+      e desc = reportResults (cdesc <> desc) . expectCorrectlyOptimized in
+  [ e "Trivial equality" trivialEq
+  , e "Unit" unit
+  , e "Indirect unit 1" indirectUnit1
+  , e "Indirect unit 2" indirectUnit2
+  , e "UnsafeTotal usage" unsafeFalselyTotal ]
 
 {-# ANN trivialEq OptimizeSingleton #-}
 trivialEq :: () :~: ()
