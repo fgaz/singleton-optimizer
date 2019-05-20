@@ -50,13 +50,6 @@ expectCorrectlyUnoptimized singl =
     (evaluate singl $> False)
     (const $ pure True :: NotOptimizedException -> IO Bool)
 
-expectIncorrectlyUnoptimized :: a -> IO Bool
-expectIncorrectlyUnoptimized singl =
-  shouldAlsoTerminate $
-  catch
-    (evaluate singl $> False)
-    (const $ pure True :: NotOptimizedException -> IO Bool)
-
 reportResults :: String -> IO Bool -> IO Bool
 reportResults desc ioRes = do
   res <- ioRes
@@ -159,18 +152,11 @@ externalRef :: ()
 externalRef = ex $ length [()] `seq` ()
 
 ----------------------------------------------
--- Incorrectly unoptimized
-
-incorrectlyUnoptimized :: [IO Bool]
-incorrectlyUnoptimized =
-  [ ]
-
----- Putting it all together
+-- Putting it all together
 
 tests :: [IO Bool]
 tests = correctlyOptimized
      <> correctlyUnoptimized
-     <> incorrectlyUnoptimized
 
 main :: IO ()
 main = do
