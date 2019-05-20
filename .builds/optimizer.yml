@@ -1,0 +1,17 @@
+image: nixos/unstable
+packages:
+- nixpkgs.haskell.compiler.ghc865
+- nixpkgs.cabal-install
+- nixpkgs.binutils
+- nixpkgs.z3
+repositories:
+  nixpkgs: https://nixos.org/channels/nixpkgs-unstable
+sources:
+- https://git.sr.ht/~fgaz/thesis
+tasks:
+- build: |
+    cd thesis/optimizer/singleton-optimizer
+    cabal new-update || cabal update
+    cabal new-build
+    cabal new-test
+
