@@ -88,7 +88,7 @@ knownFailure desc ioRes = do
 
 correctlyOptimized :: [IO Bool]
 correctlyOptimized =
-  let cdesc = "Correctly optimized - "
+  let cdesc = "Should optimize - "
       test  desc = reportResults (cdesc <> desc) . expectCorrectlyOptimized
       testF desc = knownFailure  (cdesc <> desc) . expectCorrectlyOptimized
   in
@@ -139,7 +139,7 @@ dataCon = ex $ Identity ()
 
 correctlyUnoptimized :: [IO Bool]
 correctlyUnoptimized =
-  let cdesc = "Correctly unoptimized - "
+  let cdesc = "Should not optimize - "
       test desc = reportResults (cdesc <> desc) . expectCorrectlyUnoptimized in
   [ test "Trivial loop" trivialLoop
   , test "Module-external reference" externalRef
