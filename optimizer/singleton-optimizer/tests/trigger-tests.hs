@@ -99,6 +99,8 @@ correctlyOptimized =
   , test  "UnsafeTotal usage" unsafeFalselyTotal
   , testF "Whitelisted module-external references" whitelistedExternalRefs
   , testF "Module-external data constructor" dataCon
+  -- This cannot be made to work unless LH starts checking typeclass instances
+  , testF "Typeclass method (and DFunId argument)" typeclassMethod
   ]
 
 {-# ANN trivialEq OptimizeSingleton #-}
@@ -133,6 +135,10 @@ whitelistedExternalRefs = ex $ trace `seq` (1+1::Integer) `seq` (1+1::Int) `seq`
 {-# ANN dataCon OptimizeSingleton #-}
 dataCon :: Identity ()
 dataCon = ex $ Identity ()
+
+{-# ANN typeclassMethod OptimizeSingleton #-}
+typeclassMethod :: ()
+typeclassMethod = ex mempty
 
 ----------------------------------------------
 -- Correctly unoptimized
