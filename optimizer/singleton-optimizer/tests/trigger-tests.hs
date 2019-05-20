@@ -63,27 +63,27 @@ expectIncorrectlyUnoptimized singl =
 correctlyOptimized :: [IO Bool]
 correctlyOptimized = let e = expectCorrectlyOptimized in
   [ e trivialEq
-  , e idt2, e idt1, e dt
+  , e indirectUnit2, e indirectUnit1, e unit
   , e unsafeFalselyTotal ]
 
 {-# ANN trivialEq OptimizeSingleton #-}
 trivialEq :: () :~: ()
 trivialEq = ex Refl
 
-{-# ANN idt2 OptimizeSingleton #-}
-{-# NOINLINE idt2 #-}
-idt2 :: ()
-idt2 = ex idt1
+{-# ANN indirectUnit2 OptimizeSingleton #-}
+{-# NOINLINE indirectUnit2 #-}
+indirectUnit2 :: ()
+indirectUnit2 = ex indirectUnit1
 
-{-# ANN idt1 OptimizeSingleton #-}
-{-# NOINLINE idt1 #-}
-idt1 :: ()
-idt1 = ex dt
+{-# ANN indirectUnit1 OptimizeSingleton #-}
+{-# NOINLINE indirectUnit1 #-}
+indirectUnit1 :: ()
+indirectUnit1 = ex unit
 
-{-# ANN dt OptimizeSingleton #-}
-{-# NOINLINE dt #-}
-dt :: ()
-dt = ex ()
+{-# ANN unit OptimizeSingleton #-}
+{-# NOINLINE unit #-}
+unit :: ()
+unit = ex ()
 
 {-# ANN unsafeFalselyTotal OptimizeSingleton #-}
 {-# ANN unsafeFalselyTotal UnsafeTotal #-}
