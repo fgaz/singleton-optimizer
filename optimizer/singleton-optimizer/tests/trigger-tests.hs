@@ -70,6 +70,21 @@ reportResults desc ioRes = do
   PP.putDoc line
   pure res
 
+-- TODO unify with reportResults
+knownFailure :: String -> IO Bool -> IO Bool
+knownFailure desc ioRes = do
+  res <- ioRes
+  let passfail =
+        PP.dullblack $
+          if res
+          then
+            PP.ondullred $ PP.text "UNEXPECTED PASS"
+          else
+            PP.ondullyellow $ PP.text "KNOWN FAIL"
+      line = passfail <> PP.colon PP.<+> PP.text desc <> PP.line
+  PP.putDoc line
+  pure res
+
 
 ----------------------------------------------
 -- Actual tests
