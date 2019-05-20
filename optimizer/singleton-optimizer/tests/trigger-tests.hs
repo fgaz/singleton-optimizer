@@ -95,12 +95,15 @@ knownFailure desc ioRes = do
 correctlyOptimized :: [IO Bool]
 correctlyOptimized =
   let cdesc = "Correctly optimized - "
-      e desc = reportResults (cdesc <> desc) . expectCorrectlyOptimized in
+      e desc = reportResults (cdesc <> desc) . expectCorrectlyOptimized
+      ef desc = knownFailure (cdesc <> desc) . expectCorrectlyOptimized
+  in
   [ e "Trivial equality" trivialEq
   , e "Unit" unit
   , e "Indirect unit 1" indirectUnit1
   , e "Indirect unit 2" indirectUnit2
-  , e "UnsafeTotal usage" unsafeFalselyTotal ]
+  , e "UnsafeTotal usage" unsafeFalselyTotal
+  , ef "Whitelisted module-external references" whitelistedExternalRefs ]
 
 {-# ANN trivialEq OptimizeSingleton #-}
 trivialEq :: () :~: ()
@@ -125,14 +128,29 @@ unit = ex ()
 {-# ANN unsafeFalselyTotal UnsafeTotal #-}
 {-# NOINLINE unsafeFalselyTotal #-}
 unsafeFalselyTotal :: ()
-unsafeFalselyTotal = unsafeFalselyTotal
+unsafeFalselyTotal = ex unsafeFalselyTotal
+
+{-# ANN whitelistedExternalRefs OptimizeSingleton #-}
+whitelistedExternalRefs :: ()
+whitelistedExternalRefs = ex $ trace `seq` (1+1::Integer) `seq` (1+1::Int) `seq` ()
 
 ----------------------------------------------
 -- Correctly unoptimized
 
 correctlyUnoptimized :: [IO Bool]
 correctlyUnoptimized =
-  [ ]
+  let cdesc = "Correctly unoptimized - "
+      e desc = reportResults (cdesc <> desc) . expectCorrectlyUnoptimized in
+  [ e "Trivial loop" trivialLoop
+  , e "Module-external reference" externalRef ]
+
+{-# ANN trivialLoop OptimizeSingleton #-}
+trivialLoop :: ()
+trivialLoop = ex trivialLoop
+
+{-# ANN externalRef OptimizeSingleton #-}
+externalRef :: ()
+externalRef = ex $ length [()] `seq` ()
 
 ----------------------------------------------
 -- Incorrectly unoptimized
