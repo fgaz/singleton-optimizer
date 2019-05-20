@@ -83,7 +83,7 @@ knownFailure desc ioRes = do
             PP.ondullyellow $ PP.text "KNOWN FAIL"
       line = passfail <> PP.colon PP.<+> PP.text desc <> PP.line
   PP.putDoc line
-  pure res
+  pure $ not res
 
 
 ----------------------------------------------
