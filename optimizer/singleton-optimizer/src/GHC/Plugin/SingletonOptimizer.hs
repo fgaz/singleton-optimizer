@@ -120,8 +120,8 @@ optimizeAnnotatedSingleton guts totalBinders (b, expr) = do
        (_:_ , True , True , [] ) -> pure (b, coercedSingleton bt)
        ([]  , _    , _    , _  ) -> pure (b, expr)
        (_:_ , False, _    , _  ) -> explainFailure NotASingleton b $> (b, expr)
-       (_:_ , _    , False, _  ) -> explainFailure NotProvedTotal b $> (b, expr)
        (_:_ , _    , _    , _:_) -> explainFailure (ContainsExternalReferences ext) b $> (b, expr)
+       (_:_ , _    , False, _  ) -> explainFailure NotProvedTotal b $> (b, expr)
 
 data Failure = NotASingleton
              | NotProvedTotal
