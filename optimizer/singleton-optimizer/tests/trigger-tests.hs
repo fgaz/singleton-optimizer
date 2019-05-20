@@ -89,16 +89,17 @@ knownFailure desc ioRes = do
 correctlyOptimized :: [IO Bool]
 correctlyOptimized =
   let cdesc = "Correctly optimized - "
-      e desc = reportResults (cdesc <> desc) . expectCorrectlyOptimized
-      ef desc = knownFailure (cdesc <> desc) . expectCorrectlyOptimized
+      test  desc = reportResults (cdesc <> desc) . expectCorrectlyOptimized
+      testF desc = knownFailure  (cdesc <> desc) . expectCorrectlyOptimized
   in
-  [ e "Trivial equality" trivialEq
-  , e "Unit" unit
-  , e "Indirect unit 1" indirectUnit1
-  , e "Indirect unit 2" indirectUnit2
-  , e "UnsafeTotal usage" unsafeFalselyTotal
-  , ef "Whitelisted module-external references" whitelistedExternalRefs
-  , ef "Module-external data constructor" dataCon ]
+  [ test  "Trivial equality" trivialEq
+  , test  "Unit" unit
+  , test  "Indirect unit 1" indirectUnit1
+  , test  "Indirect unit 2" indirectUnit2
+  , test  "UnsafeTotal usage" unsafeFalselyTotal
+  , testF "Whitelisted module-external references" whitelistedExternalRefs
+  , testF "Module-external data constructor" dataCon
+  ]
 
 {-# ANN trivialEq OptimizeSingleton #-}
 trivialEq :: () :~: ()
@@ -139,9 +140,10 @@ dataCon = ex $ Identity ()
 correctlyUnoptimized :: [IO Bool]
 correctlyUnoptimized =
   let cdesc = "Correctly unoptimized - "
-      e desc = reportResults (cdesc <> desc) . expectCorrectlyUnoptimized in
-  [ e "Trivial loop" trivialLoop
-  , e "Module-external reference" externalRef ]
+      test desc = reportResults (cdesc <> desc) . expectCorrectlyUnoptimized in
+  [ test "Trivial loop" trivialLoop
+  , test "Module-external reference" externalRef
+  ]
 
 {-# ANN trivialLoop OptimizeSingleton #-}
 trivialLoop :: ()
