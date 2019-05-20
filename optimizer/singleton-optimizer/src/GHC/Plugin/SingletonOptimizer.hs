@@ -42,7 +42,7 @@ import Data.Data
 import Data.Maybe
   ( isJust )
 import PrelNames
-  ( dollarIdKey, seqIdKey, traceKey
+  ( dollarIdKey, seqIdKey, traceKey, buildIdKey
   , plusNaturalIdKey, plusIntegerIdKey, minusNaturalIdKey, minusIntegerIdKey )
 
 import qualified Language.Haskell.Liquid.UX.Config as LH.Config
@@ -153,7 +153,8 @@ whitelistedIds =
   , plusNaturalIdKey
   , plusIntegerIdKey
   , minusNaturalIdKey
-  , minusIntegerIdKey ]
+  , minusIntegerIdKey
+  , buildIdKey ]
 
 externalReferences :: [CoreBndr] -- ^ Allowed identifiers
                    -> CoreExpr -- ^ Expression to check
