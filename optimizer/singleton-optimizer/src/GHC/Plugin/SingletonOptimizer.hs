@@ -163,11 +163,13 @@ externalReferences bs (Var var) = [var | external]
   where
     external = not inAllowedBinders
             && not isDataConstructor
+            && not isDFun
             && not isWhitelisted
     inAllowedBinders = var `elem` bs
     -- for some reason `isDataConName $ varName var` doesn't work but this does:
     isDataConstructor = isJust $ isDataConId_maybe var
     isWhitelisted = varUnique var `elem` whitelistedIds
+    isDFun = isDFunId var
 externalReferences _  (Lit _) = []
 externalReferences bs (App e e') =
   externalReferences bs e
