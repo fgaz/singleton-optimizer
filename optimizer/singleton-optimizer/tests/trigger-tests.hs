@@ -7,7 +7,8 @@ import System.Exit (exitSuccess, exitFailure)
 import System.Timeout (timeout)
 import Control.Exception (Exception, throw, catch, evaluate)
 import Data.Functor(($>))
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe)
+import Debug.Trace (trace)
 
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
 
@@ -31,8 +32,8 @@ ex singleton = singleton `seq` throw NotOptimizedException
 shouldAlsoTerminate :: IO Bool -> IO Bool
 shouldAlsoTerminate f = fromMaybe False <$> timeout 1000000 f
 
-shouldHang :: IO a -> IO Bool
-shouldHang f = isNothing <$> timeout 1000000 f
+canHang :: IO Bool -> IO Bool
+canHang f = fromMaybe True <$> timeout 1000000 f
 
 expectCorrectlyOptimized :: a -> IO Bool
 expectCorrectlyOptimized singl =
@@ -43,10 +44,10 @@ expectCorrectlyOptimized singl =
 
 expectCorrectlyUnoptimized :: a -> IO Bool
 expectCorrectlyUnoptimized singl =
-  shouldHang $
+  canHang $
   catch
-    (evaluate singl $> ())
-    (const mempty :: NotOptimizedException -> IO ())
+    (evaluate singl $> False)
+    (const $ pure True :: NotOptimizedException -> IO Bool)
 
 expectIncorrectlyUnoptimized :: a -> IO Bool
 expectIncorrectlyUnoptimized singl =
