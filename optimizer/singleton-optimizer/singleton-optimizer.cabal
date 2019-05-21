@@ -30,11 +30,16 @@ library
 
 test-suite trigger-tests
   ghc-options:         -fplugin GHC.Plugin.SingletonOptimizer
+  -- Optimizations combined with multiple modules (in a single component)
+  -- combined with Liquid Haskell compined with a class instance declaration
+  -- (in the imported module) produce an error.
+  ghc-options:         -O0
   type:                exitcode-stdio-1.0
   build-depends:       base
                      , singleton-optimizer
                      , ansi-wl-pprint ^>=0.6.9
   main-is:             trigger-tests.hs
+  other-modules:       Helpers
   hs-source-dirs:      tests
   default-language:    Haskell2010
   ghc-options:         -Wall
