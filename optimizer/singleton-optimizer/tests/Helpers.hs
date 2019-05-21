@@ -1,7 +1,7 @@
 module Helpers
 ( NotOptimizedException(..)
-, expectCorrectlyOptimized
-, expectCorrectlyUnoptimized
+, expectOptimized
+, expectUnoptimized
 , reportResults
 , knownFailure
 ) where
@@ -23,15 +23,15 @@ shouldAlsoTerminate f = fromMaybe False <$> timeout 1000000 f
 canHang :: IO Bool -> IO Bool
 canHang f = fromMaybe True <$> timeout 1000000 f
 
-expectCorrectlyOptimized :: a -> IO Bool
-expectCorrectlyOptimized singl =
+expectOptimized :: a -> IO Bool
+expectOptimized singl =
   shouldAlsoTerminate $
   catch
     (evaluate singl $> True)
     (const $ pure False :: NotOptimizedException -> IO Bool)
 
-expectCorrectlyUnoptimized :: a -> IO Bool
-expectCorrectlyUnoptimized singl =
+expectUnoptimized :: a -> IO Bool
+expectUnoptimized singl =
   canHang $
   catch
     (evaluate singl $> False)

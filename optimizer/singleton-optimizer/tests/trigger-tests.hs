@@ -28,13 +28,13 @@ ex singleton = singleton `seq` throw NotOptimizedException
 -- Actual tests
 
 ----------------------------------------------
--- Correctly optimized
+-- Expression that should be optimized
 
-correctlyOptimized :: [IO Bool]
-correctlyOptimized =
+shouldOptimizeTests :: [IO Bool]
+shouldOptimizeTests =
   let cdesc = "Should optimize - "
-      test  desc = reportResults (cdesc <> desc) . expectCorrectlyOptimized
-      testF desc = knownFailure  (cdesc <> desc) . expectCorrectlyOptimized
+      test  desc = reportResults (cdesc <> desc) . expectOptimized
+      testF desc = knownFailure  (cdesc <> desc) . expectOptimized
   in
   [ test  "Trivial equality" trivialEq
   , test  "Unit" unit
@@ -85,12 +85,12 @@ typeclassMethod :: ()
 typeclassMethod = ex mempty
 
 ----------------------------------------------
--- Correctly unoptimized
+-- Expressions that should not be optimized
 
-correctlyUnoptimized :: [IO Bool]
-correctlyUnoptimized =
+shouldNotOptimizeTests :: [IO Bool]
+shouldNotOptimizeTests =
   let cdesc = "Should not optimize - "
-      test desc = reportResults (cdesc <> desc) . expectCorrectlyUnoptimized in
+      test desc = reportResults (cdesc <> desc) . expectUnoptimized in
   [ test "Trivial loop" trivialLoop
   , test "Module-external reference" externalRef
   ]
@@ -107,8 +107,8 @@ externalRef = ex $ length [()] `seq` ()
 -- Putting it all together
 
 tests :: [IO Bool]
-tests = correctlyOptimized
-     <> correctlyUnoptimized
+tests = shouldOptimizeTests
+     <> shouldNotOptimizeTests
 
 main :: IO ()
 main = do
