@@ -148,6 +148,7 @@ shouldNotOptimizeTests =
       test desc = reportResults (cdesc <> desc) . expectUnoptimized in
   [ test "Trivial loop" trivialLoop
   , test "Module-external reference" externalRef
+  , test "Mutually recursive looping bindings" mutuallyRec1
   ]
 
 {-# ANN trivialLoop OptimizeSingleton #-}
@@ -157,6 +158,15 @@ trivialLoop = ex trivialLoop
 {-# ANN externalRef OptimizeSingleton #-}
 externalRef :: ()
 externalRef = ex $ length [()] `seq` ()
+
+{-# ANN mutuallyRec1 OptimizeSingleton #-}
+{-# NOINLINE mutuallyRec1 #-}
+mutuallyRec1 :: ()
+mutuallyRec1 = ex mutuallyRec2
+
+{-# NOINLINE mutuallyRec2 #-}
+mutuallyRec2 :: ()
+mutuallyRec2 = mutuallyRec1
 
 ----------------------------------------------
 -- Putting it all together
