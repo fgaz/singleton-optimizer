@@ -35,3 +35,30 @@ optimizedEquality :: SomeType :~: SomeEquivalentType
 optimizedEquality = -- some expensive expression that eventually returns a 'Refl'
 ```
 
+## Current limitations
+
+### `Bytecode compiler can't handle unboxed tuples and sums` error
+
+If all the following conditions are satisfied:
+
+* This plugin is used on a component with multiple modules
+* A module contains a typeclass instance declaration
+* That module gets imported by another module of the same component
+* Optimizations are enabled for that component (`-O1` or `-O2`)
+
+Then compilation will fail with this error
+
+```
+Error: bytecode compiler can't handle unboxed tuples and sums.
+  Possibly due to foreign import/export decls in source.
+  Workaround: use -fobject-code, or compile this module to .o separately.
+```
+
+This is a limitation of liquidhaskell and of how it calls ghc inside an
+existing ghc session.
+
+Two possible fixes are:
+
+* Move the instance declaration to the module where it's used
+* Or separate the modules in two different components
+
