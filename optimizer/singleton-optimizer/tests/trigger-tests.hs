@@ -1,3 +1,6 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 module Main where
 
@@ -50,6 +53,8 @@ shouldOptimizeTests =
   -- This requires enabling the metric-based termination checker in addition
   -- to the structural termination checker
   , testF "Calls a metric-terminating function" callsMetricTerminating
+  -- GADT
+  , test  "Calls a large term" callsLargeTerm
   ]
 
 {-# ANN trivialEq OptimizeSingleton #-}
@@ -109,6 +114,30 @@ metricTerminating n = metricTerminating (n-1)
 {-# ANN callsMetricTerminating OptimizeSingleton #-}
 callsMetricTerminating :: ()
 callsMetricTerminating = ex $ metricTerminating 32
+
+data TagProxy :: Tag -> * where
+    TagProxy :: TagProxy 'Tag1
+
+data Tag = Tag1 | Tag2
+
+data Tagged :: Tag -> * where
+    T1 :: Tagged 'Tag1
+    Trec :: Tagged k -> Tagged k
+
+tag1Proof :: Tagged k -> k :~: 'Tag1
+tag1Proof T1 = Refl
+tag1Proof (Trec t) = tag1Proof t
+
+onlyTag1 :: Tagged k -> f k -> f 'Tag1
+onlyTag1 t x = case tag1Proof t of Refl -> x
+
+largeTerm :: N -> Tagged 'Tag1
+largeTerm Z = T1
+largeTerm (S n) = Trec $ largeTerm n
+
+{-# ANN callsLargeTerm OptimizeSingleton #-}
+callsLargeTerm :: TagProxy 'Tag1
+callsLargeTerm = ex $ onlyTag1 (largeTerm bigN :: Tagged 'Tag1) (TagProxy :: TagProxy 'Tag1)
 
 ----------------------------------------------
 -- Expressions that should not be optimized
