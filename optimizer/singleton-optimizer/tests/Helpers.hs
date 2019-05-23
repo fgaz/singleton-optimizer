@@ -8,7 +8,7 @@ module Helpers
 
 import Data.Functor(($>))
 import Data.Maybe (fromMaybe)
-import Control.Exception (Exception, catch, evaluate)
+import Control.Exception (Exception, NonTermination, catch, evaluate)
 import System.Timeout (timeout)
 
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
@@ -18,10 +18,16 @@ data NotOptimizedException = NotOptimizedException deriving Show
 instance Exception NotOptimizedException
 
 shouldAlsoTerminate :: IO Bool -> IO Bool
-shouldAlsoTerminate f = fromMaybe False <$> timeout 1000000 f
+shouldAlsoTerminate f =
+  catch
+    (fromMaybe False <$> timeout 1000000 f)
+    (const $ pure False :: NonTermination -> IO Bool)
 
 canHang :: IO Bool -> IO Bool
-canHang f = fromMaybe True <$> timeout 1000000 f
+canHang f =
+  catch
+    (fromMaybe True <$> timeout 1000000 f)
+    (const $ pure True :: NonTermination -> IO Bool)
 
 expectOptimized :: a -> IO Bool
 expectOptimized singl =
