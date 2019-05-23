@@ -35,6 +35,10 @@ optimizedEquality :: SomeType :~: SomeEquivalentType
 optimizedEquality = -- some expensive expression that eventually returns a 'Refl'
 ```
 
+If Liquid Haskell's termination checker is unable to prove the totality of one
+of your functions, you can use the `UnsafeTotal` annotation to manually mark
+a binding as total.
+
 ## Current limitations
 
 ### `Bytecode compiler can't handle unboxed tuples and sums` error
