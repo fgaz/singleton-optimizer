@@ -42,6 +42,7 @@ shouldOptimizeTests =
   , test  "Indirect unit 2" indirectUnit2
   , test  "UnsafeTotal usage" unsafeFalselyTotal
   , test  "Whitelisted module-external references" whitelistedExternalRefs
+  -- This fails because of the non-recursive singleton check.
   , testF "Module-external data constructor" dataCon
   -- This cannot be made to work unless LH starts checking typeclass instances
   , testF "Typeclass method (and DFunId argument)" typeclassMethod
