@@ -68,7 +68,8 @@ data UnsafeTotal = UnsafeTotal deriving (Data, Show)
 -- @-fplugin GHC.Plugin.SingletonOptimizer@.
 plugin :: Plugin
 plugin = defaultPlugin
-  { installCoreToDos = installCorePlugin }
+  { installCoreToDos = installCorePlugin
+  , pluginRecompile = purePlugin }
 
 installCorePlugin :: [CommandLineOption] -> [CoreToDo] -> CoreM [CoreToDo]
 installCorePlugin _ todo =
