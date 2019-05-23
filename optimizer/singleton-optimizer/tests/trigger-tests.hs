@@ -45,6 +45,10 @@ shouldOptimizeTests =
   , testF "Module-external data constructor" dataCon
   -- This cannot be made to work unless LH starts checking typeclass instances
   , testF "Typeclass method (and DFunId argument)" typeclassMethod
+  , test  "Calls a structurally terminating function" callsStructurallyTerminating
+  -- This requires enabling the metric-based termination checker in addition
+  -- to the structural termination checker
+  , testF "Calls a metric-terminating function" callsMetricTerminating
   ]
 
 {-# ANN trivialEq OptimizeSingleton #-}
@@ -83,6 +87,27 @@ dataCon = ex $ Identity ()
 {-# ANN typeclassMethod OptimizeSingleton #-}
 typeclassMethod :: ()
 typeclassMethod = ex mempty
+
+data N = Z | S N
+
+bigN :: N
+bigN = S$S$S$S$S$S$S$S$S$S$S$S$S$S$S$S$S$S$S Z
+
+structurallyTerminating :: N -> ()
+structurallyTerminating Z = ()
+structurallyTerminating (S n) = structurallyTerminating n
+
+{-# ANN callsStructurallyTerminating OptimizeSingleton #-}
+callsStructurallyTerminating :: ()
+callsStructurallyTerminating = ex $ structurallyTerminating bigN
+
+metricTerminating :: Int -> ()
+metricTerminating n | n <= 0 = ()
+metricTerminating n = metricTerminating (n-1)
+
+{-# ANN callsMetricTerminating OptimizeSingleton #-}
+callsMetricTerminating :: ()
+callsMetricTerminating = ex $ metricTerminating 32
 
 ----------------------------------------------
 -- Expressions that should not be optimized
