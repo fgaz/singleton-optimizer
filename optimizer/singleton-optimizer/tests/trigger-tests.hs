@@ -147,6 +147,7 @@ shouldNotOptimizeTests =
   let cdesc = "Should not optimize - "
       test desc = reportResults (cdesc <> desc) . expectUnoptimized in
   [ test "Trivial loop" trivialLoop
+  , test "Loop in a where clause" loopInWhere
   , test "Module-external reference" externalRef
   , test "Mutually recursive looping bindings" mutuallyRec1
   ]
@@ -154,6 +155,13 @@ shouldNotOptimizeTests =
 {-# ANN trivialLoop OptimizeSingleton #-}
 trivialLoop :: ()
 trivialLoop = ex trivialLoop
+
+{-# ANN loopInWhere OptimizeSingleton #-}
+loopInWhere :: ()
+loopInWhere = f
+  where
+    {-# NOINLINE f #-}
+    f = ex f
 
 {-# ANN externalRef OptimizeSingleton #-}
 externalRef :: ()
