@@ -90,9 +90,15 @@ whitelistedExternalRefs = ex $ trace `seq` (1::Integer) `seq` ()
 dataCon :: Identity ()
 dataCon = ex $ Identity ()
 
+class C a where
+ cm :: a
+
+instance C () where
+ cm = cm
+
 {-# ANN typeclassMethod OptimizeSingleton #-}
 typeclassMethod :: ()
-typeclassMethod = ex mempty
+typeclassMethod = ex cm
 
 data N = Z | S N
 
