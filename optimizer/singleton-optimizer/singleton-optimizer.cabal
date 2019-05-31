@@ -34,6 +34,9 @@ test-suite trigger-tests
   -- combined with Liquid Haskell compined with a class instance declaration
   -- (in the imported module) produce an error.
   ghc-options:         -O0
+  -- Avoid tight non-allocating loops which prevent thread pre-emption.
+  -- Without this `timeout` may not work.
+  ghc-options:         -fno-omit-yields
   type:                exitcode-stdio-1.0
   build-depends:       base
                      , singleton-optimizer

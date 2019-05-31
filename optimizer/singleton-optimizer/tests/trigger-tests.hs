@@ -164,10 +164,10 @@ trivialLoop = ex trivialLoop
 
 {-# ANN loopInWhere OptimizeSingleton #-}
 loopInWhere :: ()
-loopInWhere = f
+loopInWhere = ex f
   where
     {-# NOINLINE f #-}
-    f = ex f
+    f = f
 
 {-# ANN externalRef OptimizeSingleton #-}
 externalRef :: ()
