@@ -49,3 +49,15 @@ test-suite trigger-tests
   default-language:    Haskell2010
   ghc-options:         -Wall
 
+benchmark reverse
+  ghc-options:         -fplugin GHC.Plugin.SingletonOptimizer
+  ghc-options:         -dcore-lint
+  type:                exitcode-stdio-1.0
+  build-depends:       base
+                     , singleton-optimizer
+                     , criterion
+  main-is:             reverse.hs
+  hs-source-dirs:      benchs
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
