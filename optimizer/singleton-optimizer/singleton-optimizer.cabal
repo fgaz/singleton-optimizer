@@ -38,6 +38,7 @@ test-suite trigger-tests
   -- Avoid tight non-allocating loops which prevent thread pre-emption.
   -- Without this `timeout` may not work.
   ghc-options:         -fno-omit-yields
+  ghc-options:         -dcore-lint
   type:                exitcode-stdio-1.0
   build-depends:       base
                      , singleton-optimizer
