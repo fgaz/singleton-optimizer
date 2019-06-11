@@ -32,6 +32,10 @@ module GHC.Plugin.SingletonOptimizer
 , UnsafeTotal(..)
 ) where
 
+
+import GHC.Plugin.SingletonOptimizer.Whitelist
+  ( getWhitelistedArgTypes, getWhitelistedVarNames )
+
 import GhcPlugins hiding ((<>), isSingleton) -- MAYBE make explicit
 import Data.Functor
   ( ($>) )
@@ -41,9 +45,6 @@ import Data.Data
   ( Data )
 import Data.Maybe
   ( isJust )
-import PrelNames
-  ( dollarIdKey, seqIdKey, traceKey, buildIdKey
-  , plusNaturalIdKey, plusIntegerIdKey, minusNaturalIdKey, minusIntegerIdKey )
 
 import qualified Language.Haskell.Liquid.UX.Config as LH.Config
 import Language.Haskell.Liquid.UX.CmdLine
@@ -85,6 +86,7 @@ pass g = do
         anns <- annotationsOn g b :: CoreM [UnsafeTotal]
         pure $ not $ null anns
   unsafelyTotalBinds <- filterM (isMarkedUnsafeTotal . fst) $ flattenBinds $ mg_binds g
+  wns <- getWhitelistedVarNames
   let nonTerm = foldMap terminationVars infos
       locallyTotalBinds = filter ((`notElem` nonTerm) . fst) (flattenBinds $ mg_binds g)
                        <> unsafelyTotalBinds
@@ -92,10 +94,10 @@ pass g = do
       -- for now.
       -- TODO investigate what exactly I have to check if I want to allow n
       -- indirections, since Rec binds are probably already checked by LH.
-      definitelyTotalBinders = fst <$> filter (\(b, e) -> null $ externalReferences (b : fmap fst unsafelyTotalBinds) e) locallyTotalBinds <> unsafelyTotalBinds
+      definitelyTotalBinders = fst <$> filter (\(b, e) -> null $ externalReferences wns (b : fmap fst unsafelyTotalBinds) e) locallyTotalBinds <> unsafelyTotalBinds
       -- TEMP two temporary additional levels of indirection
-      definitelyTotalBinders' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders) e) locallyTotalBinds <> unsafelyTotalBinds
-      definitelyTotalBinders'' = fst <$> filter (\(b, e) -> null $ externalReferences (b:definitelyTotalBinders') e) locallyTotalBinds <> unsafelyTotalBinds
+      definitelyTotalBinders' = fst <$> filter (\(b, e) -> null $ externalReferences wns (b:definitelyTotalBinders) e) locallyTotalBinds <> unsafelyTotalBinds
+      definitelyTotalBinders'' = fst <$> filter (\(b, e) -> null $ externalReferences wns (b:definitelyTotalBinders') e) locallyTotalBinds <> unsafelyTotalBinds
   newBinds <- mapM
                 (mapBind $ optimizeAnnotatedSingleton g definitelyTotalBinders'')
                 (mg_binds g)
@@ -113,12 +115,14 @@ optimizeAnnotatedSingleton :: ModGuts
                            -> CoreM (CoreBndr, CoreExpr)
 optimizeAnnotatedSingleton guts totalBinders (b, expr) = do
   anns <- annotationsOn guts b :: CoreM [OptimizeSingleton]
+  allowedArgs <- getWhitelistedArgTypes
+  wns <- getWhitelistedVarNames
   let bt = varType b -- TODO normalize type synonyms
-      singl = isSingleton bt
+      singl = isSingleton allowedArgs bt
       tot = b `elem` totalBinders
-      ext = externalReferences (b:totalBinders) expr
+      ext = externalReferences wns (b:totalBinders) expr
   case (anns, singl, tot  , ext) of
-       (_:_ , True , True , [] ) -> pure (b, coercedSingleton bt)
+       (_:_ , True , True , [] ) -> pure (b, coercedSingleton expr)
        ([]  , _    , _    , _  ) -> pure (b, expr)
        (_:_ , False, _    , _  ) -> explainFailure NotASingleton b $> (b, expr)
        (_:_ , _    , _    , _:_) -> explainFailure (ContainsExternalReferences ext) b $> (b, expr)
@@ -145,22 +149,12 @@ failureExplaination (ContainsExternalReferences vars) =
   <+> "and a few whitelisted functions ($, +, -, seq, trace...)."
   $+$ "External references: " <+> ppr vars
 
--- | Known-total external identifiers
-whitelistedIds :: [Unique]
-whitelistedIds =
-  [ dollarIdKey
-  , seqIdKey
-  , traceKey
-  , plusNaturalIdKey
-  , plusIntegerIdKey
-  , minusNaturalIdKey
-  , minusIntegerIdKey
-  , buildIdKey ]
-
-externalReferences :: [CoreBndr] -- ^ Allowed identifiers
+-- MAYBE merge the two whitelists since there's a `CoreBndr -> Name` function
+externalReferences :: [Name] -- ^ Whitelisted names (module-external)
+                   -> [CoreBndr] -- ^ Allowed identifiers (module-internal)
                    -> CoreExpr -- ^ Expression to check
                    -> [Var] -- ^ External (and not allowed) 'Var's
-externalReferences bs (Var var) = [var | external]
+externalReferences wns bs (Var var) = [var | external]
   where
     external = not inAllowedBinders
             && not isDataConstructor
@@ -169,50 +163,76 @@ externalReferences bs (Var var) = [var | external]
     inAllowedBinders = var `elem` bs
     -- for some reason `isDataConName $ varName var` doesn't work but this does:
     isDataConstructor = isJust $ isDataConId_maybe var
-    isWhitelisted = varUnique var `elem` whitelistedIds
+    isWhitelisted = varName var `elem` wns
     isDFun = isDFunId var
-externalReferences _  (Lit _) = []
-externalReferences bs (App e e') =
-  externalReferences bs e
-  <> externalReferences bs e'
-externalReferences bs (Lam b e) = externalReferences (b:bs) e
-externalReferences bs (Let (NonRec b e') e) =
-  externalReferences bs e' -- not necessary to do b:bs because it's nonrec
-  <> externalReferences (b:bs) e
-externalReferences bs (Let (Rec binders) e) =
+externalReferences _ _  (Lit _) = []
+externalReferences wns bs (App e e') =
+  externalReferences wns bs e
+  <> externalReferences wns bs e'
+externalReferences wns bs (Lam b e) = externalReferences wns (b:bs) e
+externalReferences wns bs (Let (NonRec b e') e) =
+  externalReferences wns bs e' -- not necessary to do b:bs because it's nonrec
+  <> externalReferences wns (b:bs) e
+externalReferences wns bs (Let (Rec binders) e) =
   binderRefs
-  <> externalReferences (binderBound <> bs) e
+  <> externalReferences wns (binderBound <> bs) e
   where
     binderBound = fst <$> binders
-    binderRefs = foldMap (externalReferences (binderBound <> bs) . snd) binders
-externalReferences bs (Case e b _ alts) =
-  externalReferences bs e
+    binderRefs = foldMap (externalReferences wns (binderBound <> bs) . snd) binders
+externalReferences wns bs (Case e b _ alts) =
+  externalReferences wns bs e
   <> foldMap altRefs alts
   where
-    altRefs (_, altBinds, altExpr) = externalReferences (b : altBinds <> bs) altExpr
-externalReferences bs (Cast e _) = externalReferences bs e
-externalReferences bs (Tick _ e) = externalReferences bs e
-externalReferences _  (Type _) = []
-externalReferences _  (Coercion _) = []
+    altRefs (_, altBinds, altExpr) = externalReferences wns (b : altBinds <> bs) altExpr
+externalReferences wns bs (Cast e _) = externalReferences wns bs e
+externalReferences wns bs (Tick _ e) = externalReferences wns bs e
+externalReferences _ _  (Type _) = []
+externalReferences _ _  (Coercion _) = []
 
-
--- | Check whether a 'Type.Type' is a singleton (has a single inhabitant).
+-- | Check whether a 'Type.Type' is a singleton (has a single inhabitant)
+-- or is a function that can return a singleton (every argument is inhabited).
 -- This does not catch all singleton cases, but it will definitely return
 -- 'False' when the type is NOT a singleton, so we're good.
 -- Cases where it returns 'False' on singletons:
 -- * @data SomeType = SomeConstructor SomeSingleton@
 -- * probably others
-isSingleton :: Type -> Bool
-isSingleton = maybe False (null . dataConOrigArgTys) .
-                (tyConSingleDataCon_maybe <=< tyConAppTyCon_maybe)
+isSingleton :: [Name] -> Type -> Bool
+isSingleton allowedArgs t = resIsSingleton res
+                         && all isAllowedArg args
+  where
+    (_foralls, t') = splitForAllTys t
+    (args, res) = splitFunTys t'
+    resIsSingleton = maybe False (null . dataConOrigArgTys) .
+                       (tyConSingleDataCon_maybe <=< tyConAppTyCon_maybe)
+    isAllowedArg at = fmap tyConName (tyConAppTyCon_maybe at)
+                      `elem`
+                      fmap Just allowedArgs
 
--- | Construct the only possible inhabitant of a singleton.
--- MUST be called on singletons only
-coercedSingleton :: Type -> CoreExpr
-coercedSingleton t =
-  case tyConAppTyCon_maybe t >>= tyConSingleDataCon_maybe of
-    Nothing -> error "Error: not a singleton"
-    Just dataCon -> Var $ mkCoVar (dataConName dataCon) t
+-- | Construct the only possible inhabitant of a singleton, replacing the given
+-- expression, but keeping its arity and the type of its arguments intact.
+-- MUST be called on singletons (or functions that can return a singleton) only
+coercedSingleton :: CoreExpr -> CoreExpr
+coercedSingleton originalExpr = newExpr
+  where
+    newExpr =
+      case originalExpr of
+        -- Keep the arity
+        Lam b e -> Lam b $ coercedSingleton e
+        e -> coercedConstructor $ exprType e
+    coercedConstructor t =
+      case tyConAppTyCon_maybe t >>= tyConSingleDataCon_maybe of
+        Nothing -> error $ "Error: trying to optimize a non-singleton "
+                        ++ "(this is a bug, please report it)."
+        Just dataCon ->
+          -- Find the only possible constructor of the singleton
+          let singletonConstructor = dataConWrapId dataCon
+          -- Coerce that constructor to the appropriate type
+          in Cast
+              (Var singletonConstructor)
+              $ mkUnsafeCo
+                  Representational
+                  (varType singletonConstructor)
+                  t
 
 -- | Map a function to both 'Rec' and 'NonRec' bindings
 mapBind :: ((b, Expr b) -> CoreM (b, Expr b)) -> Bind b -> CoreM (Bind b)

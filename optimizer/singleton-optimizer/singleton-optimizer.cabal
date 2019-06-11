@@ -19,7 +19,8 @@ extra-source-files:  CHANGELOG.md
 
 library
   exposed-modules:     GHC.Plugin.SingletonOptimizer
-  -- other-modules:
+                     , GHC.Plugin.SingletonOptimizer.Whitelist.Types
+  other-modules:       GHC.Plugin.SingletonOptimizer.Whitelist
   -- other-extensions:
   build-depends:       base ^>=4.12.0.0
                      , ghc
