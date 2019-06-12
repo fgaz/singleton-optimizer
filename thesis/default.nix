@@ -21,7 +21,10 @@ let
 in stdenv.mkDerivation {
   name = "thesis";
   src = ./.;
-  nativeBuildInputs = [ tex-environment ghostscript ];
+  nativeBuildInputs = [
+    tex-environment
+    ghostscript # to convert the eps logo
+  ];
   buildPhase = ''
     pdflatex ${filename}.tex
     bibtex ${filename}.aux
