@@ -2,9 +2,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
 module Main where
 
 import GHC.Plugin.SingletonOptimizer
+import GHC.Plugin.SingletonOptimizer.Whitelist.Types
 import Data.Type.Equality ((:~:)(Refl))
 import System.Exit (exitSuccess, exitFailure)
 import Control.Exception (throw)
@@ -58,6 +60,7 @@ shouldOptimizeTests =
   ]
 
 {-# ANN trivialEq OptimizeSingleton #-}
+{-# NOINLINE trivialEq #-}
 trivialEq :: () :~: ()
 trivialEq = ex Refl
 
@@ -100,8 +103,6 @@ instance C () where
 typeclassMethod :: ()
 typeclassMethod = ex cm
 
-data N = Z | S N
-
 bigN :: N
 bigN = S$S$S$S$S$S$S$S$S$S$S$S$S$S$S$S$S$S$S Z
 
@@ -142,6 +143,7 @@ largeTerm Z = T1
 largeTerm (S n) = Trec $ largeTerm n
 
 {-# ANN callsLargeTerm OptimizeSingleton #-}
+{-# NOINLINE callsLargeTerm #-}
 callsLargeTerm :: TagProxy 'Tag1
 callsLargeTerm = ex $ onlyTag1 (largeTerm bigN :: Tagged 'Tag1) (TagProxy :: TagProxy 'Tag1)
 
@@ -151,11 +153,15 @@ callsLargeTerm = ex $ onlyTag1 (largeTerm bigN :: Tagged 'Tag1) (TagProxy :: Tag
 shouldNotOptimizeTests :: [IO Bool]
 shouldNotOptimizeTests =
   let cdesc = "Should not optimize - "
-      test desc = reportResults (cdesc <> desc) . expectUnoptimized in
+      test desc = reportResults (cdesc <> desc) . expectUnoptimized
+      testF desc = knownFailure  (cdesc <> desc) . expectUnoptimized in
   [ test "Trivial loop" trivialLoop
   , test "Loop in a where clause" loopInWhere
   , test "Module-external reference" externalRef
   , test "Mutually recursive looping bindings" mutuallyRec1
+  , test "Infinite term 1" callsInfTerm1
+  , test "Infinite term 2" callsInfTerm2
+  , testF "Datatype-encoded recursion" callsRecWithData
   ]
 
 {-# ANN trivialLoop OptimizeSingleton #-}
@@ -181,6 +187,31 @@ mutuallyRec1 = ex mutuallyRec2
 {-# NOINLINE mutuallyRec2 #-}
 mutuallyRec2 :: ()
 mutuallyRec2 = mutuallyRec1
+
+infT :: Tagged 'Tag1
+infT = Trec infT
+
+infN :: N
+infN = S infN
+
+{-# ANN callsInfTerm1 OptimizeSingleton #-}
+callsInfTerm1 :: TagProxy 'Tag1
+callsInfTerm1 = ex $ onlyTag1 (largeTerm infN :: Tagged 'Tag1) (TagProxy :: TagProxy 'Tag1)
+
+{-# ANN callsInfTerm2 OptimizeSingleton #-}
+callsInfTerm2 :: TagProxy 'Tag1
+callsInfTerm2 = ex $ onlyTag1 (infT :: Tagged 'Tag1) (TagProxy :: TagProxy 'Tag1)
+
+-- Datatype-encoded recursion
+newtype Rec a = MkRec (Rec a -> a)
+
+{-# NOINLINE recWithData #-}
+recWithData :: Rec a -> a
+recWithData r@(MkRec f) = f r
+
+{-# ANN callsRecWithData OptimizeSingleton #-}
+callsRecWithData :: ()
+callsRecWithData = ex $ recWithData (MkRec recWithData)
 
 ----------------------------------------------
 -- Putting it all together
