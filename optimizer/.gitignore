@@ -1,0 +1,7 @@
+.ghc.environment.*
+*.hi
+*.o
+dist
+dist-newstyle
+.liquid
+
