@@ -210,7 +210,7 @@ recWithData :: Rec a -> a
 recWithData r@(MkRec f) = f r
 
 {-# ANN callsRecWithData OptimizeSingleton #-}
-callsRecWithData :: ()
+callsRecWithData :: (Int :~: Bool)
 callsRecWithData = ex $ recWithData (MkRec recWithData)
 
 ----------------------------------------------
