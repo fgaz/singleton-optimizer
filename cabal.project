@@ -1,9 +1,4 @@
 packages: .
-  -- experiments
-  plugin-experiments/CoreAnnotationPlugin
-  plugin-experiments/CoreAnnotationPluginMain
-  --plugin-experiments/SourcePlugin
-  --plugin-experiments/SourcePluginMain
 
 source-repository-package
   type: git
