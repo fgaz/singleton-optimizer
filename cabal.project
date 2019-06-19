@@ -1,5 +1,4 @@
-packages:
-  singleton-optimizer
+packages: .
   -- experiments
   plugin-experiments/CoreAnnotationPlugin
   plugin-experiments/CoreAnnotationPluginMain

@@ -1,12 +1,10 @@
-# Tesi Triennale -- Optimizing Total Singletons
+# singleton-optimizer GHC plugin
 
-[![builds.sr.ht status](https://builds.sr.ht/~fgaz/thesis.svg)](https://builds.sr.ht/~fgaz/thesis?)
+[![builds.sr.ht status](https://builds.sr.ht/~fgaz/singleton-optimizer.svg)](https://builds.sr.ht/~fgaz/singleton-optimizer?)
+
+**A GHC plugin that optimizes away the implementation of total singletons**
 
 TODO write a proper readme
-
-* `thesis` → the tex source of the thesis
-* `optimizer` → code
-  * `optimizer/singleton-optimizer` → the actual optimizer (the rest are experiments)
 
 ## Usage
 
