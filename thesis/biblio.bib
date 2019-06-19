@@ -1,51 +1,31 @@
-% book
-% Required fields: author or editor, title, publisher, year. 
-% Optional fields: volume or number, series, address, edition, month, note.
-@book{coulouris,
-  author = {Coulouris  G.  F.,  Dollimore J. e  Kindberg T},
-  title = {Distributed Systems: concepts and Design},
-  publisher = {Addison-Wesley},
-  year = {1994},
-  edition = "second edition"
+@techreport{simple-unification-based-type-inference-for-gadts,
+author = {Vytiniotis, Dimitrios and Weirich, Stephanie and Peyton Jones, Simon},
+title = {Simple unification-based type inference for GADTs},
+year = {2006},
+month = {April},
+abstract = {Generalized algebraic data types (GADTs), sometimes known as "guarded recursive data types" or "first-class phantom types", are a simple but powerful generalization of the data types of Haskell and ML. Recent works have given compelling examples of the utility of GADTs, although type inference is known to be difficult. Our contribution is to show how to exploit programmer-supplied type annotations to make the type inference task almost embarrassingly easy. Our main technical innovation is wobbly types, which express in a declarative way the uncertainty caused by the incremental nature of typical type-inference algorithms.
 
+  Related papers
+},
+publisher = {ACM Press},
+url = {https://www.microsoft.com/en-us/research/publication/simple-unification-based-type-inference-for-gadts/},
+pages = {50-61},
+edition = {ACM SIGPLAN International Conference on Functional Programming (ICFP'06)},
+number = {MS-CIS-05-22},
+note = {ACM SIGPLAN International Conference on Functional Programming (ICFP'06)},
 }
 
-% article
-% Required fields: author, title, journal, year. 
-% Optional fields: volume, number, pages, month, note.
-@article{donoho,
-  author = {Donoho D. L.},
-  title = {Compressed Sensing},
-  journal = {IEEE Trans. Inf. Theory},
-  volume = {52},
-  number = {4},
-  pages = {1289-1306},
-  year = {2006}
+@Inproceedings{refinement-types-for-haskell,
+author = {Vazou, Niki and Seidel, Eric L. and Jhala, Ranjit and Vytiniotis, Dimitrios and Peyton Jones, Simon},
+title = {Refinement Types for Haskell},
+series = {ICFP '14},
+year = {2014},
+month = {September},
+abstract = {SMT-based checking of refinement types for call-by-value languages is a well-studied subject. Unfortunately, the classical translation of refinement types to verification conditions is unsound under lazy evaluation. When checking an expression, such systems implicitly assume that all the free variables in the expression are bound to values. This property is trivially guaranteed by eager, but does not hold under lazy, evaluation. Thus, to be sound and precise, a refinement type system for Haskell and the corresponding verification conditions must take into account which subset of binders actually reduces to values. We present a stratified type system that labels binders as potentially diverging or not, and that (circularly) uses refinement types to verify the labeling. We have implemented our system in LIQUIDHASKELL and present an experimental evaluation of our approach on more than 10,000 lines of widely used Haskell libraries. We show that LIQUIDHASKELL is able to prove 96\% of all recursive functions terminating, while requiring a modest 1.7 lines of termination-annotations per 100 lines of code},
+publisher = {ACM},
+url = {https://www.microsoft.com/en-us/research/publication/refinement-types-for-haskell/},
+pages = {269-282},
+isbn = {978-1-4503-2873-9},
+edition = {Proceedings of the 19th ACM SIGPLAN International Conference on Functional Programming},
 }
-
-% conference
-% same as inproceedings
-% Required fields: author, title, booktitle, year. 
-% Optional fields: editor, volume or number, series, pages, address, month, organization, publisher, note
-@conference{dalal,
-  author = {Dalal N., Triggs B.},
-  title = {Histograms of Oriented Gradients for Human Detection},
-  booktitle = {Computer Vision and Pattern Recognition (CVPR)},
-  address = {San Diego, USA},
-  year = {2005},
-  month = {20-26 June},
-  pages = {886-893}
-}
-
-% website
-% as misc
-% Required fields: none. 
-% Optional fields: author, title, howpublished, month, year, note.
-@misc{ictbusiness,
-  title = {ICT business},
-  howpublished = {http://www.ictbusiness.it/},
-  note = {ultimo accesso 15/06/2015}
-}
-
-
 
