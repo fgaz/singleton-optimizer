@@ -16,11 +16,11 @@ snInt :: SN n -> Int
 snInt SZ     = 0
 snInt (SS n) = succ (snInt n)
 
-type family Plus (n :: N) (m :: N) :: N where
-    Plus 'Z     m = m
-    Plus ('S n) m = 'S (Plus n m)
+type family (n :: N) :+: (m :: N) :: N where
+    'Z   :+: m = m
+    'S n :+: m = 'S (n :+: m)
 
-type ProofIdentityZ n = SN n -> Plus n 'Z :~: n
+type ProofIdentityZ n = SN n -> n :+: 'Z :~: n
 
 {-# ANN proofIdentityZ OptimizeSingleton #-}
 proofIdentityZ :: ProofIdentityZ n
@@ -31,7 +31,7 @@ proofIdentityZUnoptimized :: ProofIdentityZ n
 proofIdentityZUnoptimized SZ = Refl
 proofIdentityZUnoptimized (SS n) = case proofIdentityZUnoptimized n of Refl -> Refl
 
-type ProofS n m = SN n -> SN m -> Plus n ('S m) :~: 'S (Plus n m)
+type ProofS n m = SN n -> SN m -> n :+: 'S m :~: 'S (n :+: m)
 
 {-# ANN proofS OptimizeSingleton #-}
 proofS :: ProofS n m
@@ -62,13 +62,13 @@ reverseVecItUnoptimized v =
     case proofIdentityZUnoptimized (lengthVec v) of
       Refl -> revWrapUnoptimized v Nil
 
-revWrap :: Vec a n -> Vec a m -> Vec a (Plus n m)
+revWrap :: Vec a n -> Vec a m -> Vec a (n :+: m)
 revWrap Nil         acc = acc
 revWrap (Cons x xs) acc =
     case proofS (lengthVec xs) (lengthVec acc) of
       Refl -> revWrap xs (Cons x acc)
 
-revWrapUnoptimized :: Vec a n -> Vec a m -> Vec a (Plus n m)
+revWrapUnoptimized :: Vec a n -> Vec a m -> Vec a (n :+: m)
 revWrapUnoptimized Nil         acc = acc
 revWrapUnoptimized (Cons x xs) acc =
     case proofSUnoptimized (lengthVec xs) (lengthVec acc) of
