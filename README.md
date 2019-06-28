@@ -29,7 +29,7 @@ And in your module:
 
 ```haskell
 {-# ANN optimizedEquality OptimizeSingleton #-}
-optimizedEquality :: SomeType :~: SomeEquivalentType
+optimizedEquality :: SomeWhitelistedType -> SomeType :~: SomeEquivalentType
 optimizedEquality = -- some expensive expression that eventually returns a 'Refl'
 ```
 

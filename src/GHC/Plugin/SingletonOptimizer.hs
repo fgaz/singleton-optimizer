@@ -55,8 +55,9 @@ import Language.Haskell.Liquid.Termination.Structural
   ( terminationVars )
 
 
--- | All singletons (/not/ functions that return singletons) marked with this
--- annotation will be checked for totality and, in case, optimized.
+-- | All singletons --or functions that take as input only whitelisted elements
+-- and return singletons-- marked with this annotation will be checked for
+-- totality and, in case, optimized.
 data OptimizeSingleton = OptimizeSingleton deriving (Data, Show)
 
 -- | use this annotation to manually mark a binding as total. It will /not/ be
