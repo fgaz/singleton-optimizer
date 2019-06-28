@@ -8,7 +8,7 @@ module GHC.Plugin.SingletonOptimizer.Whitelist
 import GHC.Plugin.SingletonOptimizer.Whitelist.Types
 
 import GhcPlugins
-  ( CoreM, Name, Unique, thNameToGhcName, nameUnique )
+  ( CoreM, Name, thNameToGhcName )
 
 import Data.Maybe
   ( catMaybes )
