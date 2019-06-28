@@ -4,7 +4,7 @@
 
 **A GHC plugin that optimizes away the implementation of total singletons**
 
-TODO write a proper readme
+TODO write a more complete readme
 
 ## Usage
 
@@ -38,6 +38,11 @@ of your functions, you can use the `UnsafeTotal` annotation to manually mark
 a binding as total.
 
 ## Current limitations
+
+### No intra-module totality checking
+
+Due to limitations in how GHC plugins work, all names referenced by a marked
+binding have to be either whitelisted or from the same module.
 
 ### `Bytecode compiler can't handle unboxed tuples and sums` error
 
